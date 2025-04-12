@@ -1,8 +1,10 @@
 import fastf1
 import fastf1.plotting
 from fastf1.core import Session
+from fastf1 import get_session
 from typing import Optional, List
 import pandas as pd
+from constants import Driver, TyreCompound, Track, SessionType
 
 class DataExtractor:
     def __init__(self, year: int, grand_prix: str, session_type: str):
@@ -40,4 +42,16 @@ class DataExtractor:
 
     def get_driver_list(self) -> List[str]:
         return self.get_laps()['Driver'].unique().tolist()
+    
+    def get_training_data_by_driver(training: SessionType, driver: Driver, season: int, track: Track):
+        session = get_session(season, track, training.value)
+        session.load()
+
+        driver_laps = session.laps.pick_drivers(driver.value)
+        weather_data = driver_laps.get_weather_data()
+        # car_data = driver_laps.get_car_data()
+        # position_data = driver_laps.get_pos_data()
+        lap_data = pd.concat([driver_laps, weather_data], axis=1)
+
+        return driver_laps, weather_data
 
