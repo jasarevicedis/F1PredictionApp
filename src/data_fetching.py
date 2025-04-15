@@ -51,7 +51,38 @@ class DataExtractor:
         weather_data = driver_laps.get_weather_data()
         # car_data = driver_laps.get_car_data()
         # position_data = driver_laps.get_pos_data()
-        lap_data = pd.concat([driver_laps, weather_data], axis=1)
+        driver_laps.drop(columns= [
+            "DriverNumber", 
+            "PitOutTime", 
+            "PitInTime",
+            "Sector1Time",
+            "Sector2Time",
+            "Sector3Time",
+            "Sector1SessionTime",
+            "Sector2SessionTime",
+            "Sector3SessionTime",
+            "SpeedFL",
+            "SpeedST",
+            "Deleted",
+            "DeletedReason",
+            "Position",
+            "IsPersonalBest",
+            "LapStartTime",
+            "LapStartDate",
+        ], inplace=True)
 
-        return driver_laps, weather_data
+        weather_data.drop(columns= [
+            "WindSpeed",
+            "WindDirection",
+            "Pressure",
+            "Humidity",
+            "Time"
+        ], inplace=True)
+
+        # Reset indices just in case
+        driver_laps.reset_index(drop=True, inplace=True)
+        weather_data.reset_index(drop=True, inplace=True)
+        combined_data = pd.concat([driver_laps, weather_data], axis=1)
+
+        return combined_data
 
