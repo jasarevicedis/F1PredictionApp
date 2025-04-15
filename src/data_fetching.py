@@ -52,10 +52,14 @@ class DataExtractor:
         # car_data = driver_laps.get_car_data()
         # position_data = driver_laps.get_pos_data()
         driver_laps.drop(columns= [
+            "Time",
+            "LapNumber",
             "DriverNumber", 
             "PitOutTime", 
             "PitInTime",
             "Sector1Time",
+            "SpeedI1",
+            "SpeedI2",
             "Sector2Time",
             "Sector3Time",
             "Sector1SessionTime",

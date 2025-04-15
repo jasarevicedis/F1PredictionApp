@@ -22,6 +22,14 @@ class TyreCompound(str, Enum):
     INTER = "INTERMEDIATE"
     WET = "WET"
 
+class TyreClass(str, Enum):
+    C1 = 'c1', #hardest
+    C2 = 'c2',
+    C3 = 'c3',
+    C4 = 'c4',
+    C5 = 'c5',
+    C6 = 'c6',
+
 class SessionType(str, Enum):
     FP1 = "Practice 1"
     FP2 = "FP2"
