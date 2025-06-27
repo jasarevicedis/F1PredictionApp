@@ -18,7 +18,8 @@ class DataExtractor:
         self.session: Optional[Session] = None
 
     def load_session(self) -> None:
-        fastf1.Cache.enable_cache("data/cache") 
+        print(self.year, self.grand_prix, self.session_type)
+        #fastf1.Cache.enable_cache("data/cache") 
         self.session = fastf1.get_session(self.year, self.grand_prix, self.session_type)
         self.session.load()
 
@@ -43,7 +44,7 @@ class DataExtractor:
     def get_driver_list(self) -> List[str]:
         return self.get_laps()['Driver'].unique().tolist()
     
-    def get_training_data_by_driver(training: SessionType, driver: Driver, season: int, track: Track):
+    def get_session_data_by_driver(training: SessionType, driver: Driver, season: int, track: Track):
         session = get_session(season, track, training.value)
         session.load()
 
@@ -51,6 +52,7 @@ class DataExtractor:
         weather_data = driver_laps.get_weather_data()
         # car_data = driver_laps.get_car_data()
         # position_data = driver_laps.get_pos_data()
+        '''
         driver_laps.drop(columns= [
             "Time",
             "LapNumber",
@@ -82,6 +84,7 @@ class DataExtractor:
             "Humidity",
             "Time"
         ], inplace=True)
+        '''
 
         # Reset indices just in case
         driver_laps.reset_index(drop=True, inplace=True)
@@ -89,4 +92,8 @@ class DataExtractor:
         combined_data = pd.concat([driver_laps, weather_data], axis=1)
 
         return combined_data
-
+    
+    def get_history_data_by_driver():
+        return 
+    
+    
