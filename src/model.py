@@ -21,8 +21,6 @@ if os.path.exists(output_summary_file):
     os.remove(output_summary_file)
     print(f"Cleared existing summary file: {output_summary_file}")
 
-
-# Helper function for Stint Time Calculation
 def calculate_stint_time(start_lap, end_lap, tyre_class, track_temp, rain, current_model, features_list):
     stint_laps = list(range(start_lap, end_lap + 1))
     if not stint_laps:
@@ -41,11 +39,6 @@ def calculate_stint_time(start_lap, end_lap, tyre_class, track_temp, rain, curre
     return sum(predicted_lap_times)
 
 def format_lap_interval_display(lap_number, total_race_laps, interval_size=6):
-    """
-    Formates a single lap number into an interval (lap +/- half_interval_size),
-    clamped by 1 and total_race_laps.
-    Returns a string like "LXX-YY".
-    """
     half_interval = interval_size // 2
     start_lap = max(1, lap_number - half_interval)
     end_lap = min(total_race_laps, lap_number + half_interval)
@@ -53,11 +46,8 @@ def format_lap_interval_display(lap_number, total_race_laps, interval_size=6):
 
 
 # --- Global setting for controlling the number of strategies ---
-# Increasing this value will reduce the total number of strategies generated.
 PIT_STOP_LAP_STEP_SIZE = 5 
 
-
-# --- Main Loop to Process Each Track ---
 for track_enum, track_details in TRACK_RACE_DATA.items():
     current_track_name = track_enum.name.title() # e.g., "Bahrain" from "BAHRAIN"
     output_base_dir = os.path.join("data", f"Data_{current_track_name}")
@@ -66,34 +56,30 @@ for track_enum, track_details in TRACK_RACE_DATA.items():
     print(f"--- Processing Track: {current_track_name} ---")
     print(f"{'='*80}\n")
 
-    # Get track-specific parameters
+
     RACE_LAPS = track_details["race_laps"]
     AVG_PIT_STOP_TIME_SECONDS = track_details["avg_pit_stop_time_seconds"]
     hypothetical_track_temp = track_details["track_temp_2025_celsius"]
     hypothetical_rain = 0 # Assuming 2025 simulations are for dry conditions unless specific rain allocation is added
 
-    # Determine available 2025 tyres for simulation based on track_data
-    # This now correctly extracts the TyreClass ENUMS for simulation
     compounds_2025_allocation = track_details.get(2025, {}).get("compound_allocation", {})
     
-    # Build a display map for the current track's 2025 tyre allocation
-    # e.g., {'C1': 'HARD', 'C2': 'MEDIUM', 'C3': 'SOFT'}
+    # {'C1': 'HARD', 'C2': 'MEDIUM', 'C3': 'SOFT'}
     current_track_display_map = {}
     available_tyre_classes_for_simulation = []
     for tyre_compound_enum, tyre_class_enum in compounds_2025_allocation.items():
-        if tyre_class_enum and tyre_compound_enum: # Ensure both are valid enums
+        if tyre_class_enum and tyre_compound_enum:
             current_track_display_map[tyre_class_enum.value] = tyre_compound_enum.value
             available_tyre_classes_for_simulation.append(tyre_class_enum.value)
     
     if not available_tyre_classes_for_simulation:
         print(f"No valid 2025 compound allocation found or derivable for {current_track_name}. Skipping simulation for this track.")
-        continue # Skip to next track if no 2025 data
+        continue
 
     print(f"Race Laps: {RACE_LAPS}")
     print(f"Average Pit Stop Time: {AVG_PIT_STOP_TIME_SECONDS} seconds")
     print(f"Hypothetical 2025 Track Temperature: {hypothetical_track_temp}°C")
     print(f"Simulating a DRY race. Available Tyre Classes for simulation: {', '.join(available_tyre_classes_for_simulation)}")
-
 
     # --- Data Loading ---
     all_laps_df = pd.DataFrame()
@@ -126,23 +112,22 @@ for track_enum, track_details in TRACK_RACE_DATA.items():
 
     if all_laps_df.empty:
         print(f"No race data loaded for {current_track_name}. Cannot proceed with prediction.")
-        continue # Skip to next track
+        continue 
 
     print(f"Successfully consolidated data for {current_track_name}. Loaded {total_laps_loaded} laps from {race_sessions_found} race sessions.")
 
     # --- Data Preprocessing ---
-    # Now expecting 'TyreClass' directly in the input data, not 'Compound'
     required_columns = ['LapTime', 'TrackTemp', 'Rain', 'TyreClass', 'Lap'] 
     if not all(col in all_laps_df.columns for col in required_columns):
         print(f"Error: One or more required columns missing from data for {current_track_name}: {required_columns}")
         print("Available columns:", all_laps_df.columns.tolist())
-        continue # Skip to next track
+        continue 
     
     model_data = all_laps_df.dropna(subset=required_columns).copy()
 
     if model_data.empty:
         print(f"After dropping NaNs, no valid race data remains for training for {current_track_name}.")
-        continue # Skip to next track
+        continue 
     
     print(f"After dropping NaNs, {len(model_data)} valid race laps remain for training for {current_track_name}.")
     
@@ -151,7 +136,7 @@ for track_enum, track_details in TRACK_RACE_DATA.items():
 
     if model_data.empty:
         print(f"After TyreClass check, no valid data remains for {current_track_name}. Skipping.")
-        continue # Skip to next track
+        continue 
 
     # Features (X) and Target (y)
     features = ['Rain', 'TrackTemp', 'TyreClass', 'Lap']
@@ -218,15 +203,12 @@ for track_enum, track_details in TRACK_RACE_DATA.items():
         print(f"\n--- Training and Evaluating: {model_name} for {current_track_name} ---")
         model_pipeline.fit(X_train, y_train)
         
-        # Predictions for evaluation
         y_train_pred = model_pipeline.predict(X_train)
         y_test_pred = model_pipeline.predict(X_test)
         
-        # Calculate metrics for training set
         mae_train = mean_absolute_error(y_train, y_train_pred)
         r2_train = r2_score(y_train, y_train_pred)
 
-        # Calculate metrics for testing set
         mae_test = mean_absolute_error(y_test, y_test_pred)
         r2_test = r2_score(y_test, y_test_pred)
 
@@ -243,10 +225,8 @@ for track_enum, track_details in TRACK_RACE_DATA.items():
             best_model_test_mae = mae_test
             best_model_name_for_MAE = model_name
 
-        # --- Generate and Evaluate Race Strategies for the current model ---
         simulated_strategies = []
 
-        # Define an explicit hardness ranking for slick compounds (lower rank = harder compound)
         # Wet and Intermediate are not included here as they have different rules / are for specific conditions
         compound_ranking = {'HARD': 0, 'MEDIUM': 1, 'SOFT': 2}
 
@@ -259,38 +239,31 @@ for track_enum, track_details in TRACK_RACE_DATA.items():
 
             for tyre_class1_val in available_tyre_classes_for_simulation:
                 for tyre_class2_val in available_tyre_classes_for_simulation:
-                    # Rule: Consecutive stints must use different tire classes
                     if tyre_class1_val == tyre_class2_val:
                         continue 
                     
-                    stint1_len = stint1_end_lap - 1 + 1 # (end_lap - start_lap + 1)
+                    stint1_len = stint1_end_lap - 1 + 1 
                     stint2_len = RACE_LAPS - stint2_start_lap + 1
 
-                    # Get the compound type for each tire class used in this strategy
                     compound1_type = current_track_display_map.get(tyre_class1_val)
                     compound2_type = current_track_display_map.get(tyre_class2_val)
 
                     is_valid_stint_length_order = True
-                    # Only apply rules to slick tires. Wet/Intermediate are excluded from hardness comparison.
                     if compound1_type in compound_ranking and compound2_type in compound_ranking:
                         rank1 = compound_ranking[compound1_type]
                         rank2 = compound_ranking[compound2_type]
 
-                        # If tire1 is harder than tire2 (rank1 < rank2), then stint1_len should be >= stint2_len
                         if rank1 < rank2 and stint1_len < stint2_len:
                             is_valid_stint_length_order = False
-                        # If tire2 is harder than tire1 (rank2 < rank1), then stint2_len should be >= stint1_len
                         elif rank2 < rank1 and stint2_len < stint1_len:
                             is_valid_stint_length_order = False
                     
                     if not is_valid_stint_length_order:
-                        continue # Skip this strategy as it violates the hardness-stint length rule
+                        continue 
                     
-                    # Use the current_track_display_map for output formatting
                     compound1_display = current_track_display_map.get(tyre_class1_val, tyre_class1_val)
                     compound2_display = current_track_display_map.get(tyre_class2_val, tyre_class2_val)
                     
-                    # Apply lap interval formatting to the pit stop lap (stint1_end_lap)
                     formatted_stint1_end_lap_display = format_lap_interval_display(stint1_end_lap, RACE_LAPS)
                     
                     strategy_name = (
@@ -311,7 +284,7 @@ for track_enum, track_details in TRACK_RACE_DATA.items():
         for stint1_end_lap in range(min_stint_len_2, RACE_LAPS - 2 * min_stint_len_2 + 1, PIT_STOP_LAP_STEP_SIZE):
             for stint2_end_lap in range(stint1_end_lap + min_stint_len_2, RACE_LAPS - min_stint_len_2 + 1, PIT_STOP_LAP_STEP_SIZE):
                 
-                stint1_len = stint1_end_lap - 1 + 1 # (end_lap - start_lap + 1)
+                stint1_len = stint1_end_lap - 1 + 1
                 stint2_start_lap = stint1_end_lap + 1
                 stint2_len = stint2_end_lap - stint1_end_lap
                 stint3_start_lap = stint2_end_lap + 1
@@ -323,17 +296,14 @@ for track_enum, track_details in TRACK_RACE_DATA.items():
                 for tyre_class1_val in available_tyre_classes_for_simulation:
                     for tyre_class2_val in available_tyre_classes_for_simulation:
                         for tyre_class3_val in available_tyre_classes_for_simulation:
-                            # Rule: Consecutive stints must use different tire classes
                             if tyre_class1_val == tyre_class2_val or tyre_class2_val == tyre_class3_val:
                                 continue
                             
                             stint_info = []
-                            # Get the compound type for each tire class used in this strategy
                             compound1_type = current_track_display_map.get(tyre_class1_val)
                             compound2_type = current_track_display_map.get(tyre_class2_val)
                             compound3_type = current_track_display_map.get(tyre_class3_val)
 
-                            # Add only slick tire stints to the list for comparison
                             if compound1_type in compound_ranking:
                                 stint_info.append((compound1_type, stint1_len))
                             if compound2_type in compound_ranking:
@@ -342,7 +312,6 @@ for track_enum, track_details in TRACK_RACE_DATA.items():
                                 stint_info.append((compound3_type, stint3_len))
                             
                             is_valid_stint_length_order = True
-                            # Compare all unique pairs of compounds within the current strategy's stints
                             for i in range(len(stint_info)):
                                 for j in range(i + 1, len(stint_info)):
                                     type_a, len_a = stint_info[i]
@@ -505,7 +474,6 @@ for track_enum, track_details in TRACK_RACE_DATA.items():
     print(summary_df.to_string(index=False))
     summary_string = summary_df.to_string(index=False)
 
-    # Append to the output file
     with open(output_summary_file, 'a') as f:
         f.write(f"\n\n--- Full Model Evaluation Summary for Track: {current_track_name} ---\n")
         f.write(summary_string)
