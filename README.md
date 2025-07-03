@@ -3,6 +3,11 @@
 This project is a machine learning-powered application that predicts Formula 1 tyre strategies using [FastF1](https://theoehrly.github.io/Fast-F1/) data. It includes a backend for data fetching and model training, and a web interface (coming soon) for interactive predictions.
 
 ---
+### 📽️ Project Presentation
+
+- <strong> <a href="https://www.youtube.com/watch?v=jIm7UN2TUkU">Watch the Project Presentation on YouTube</a></strong>
+
+
 
 
 ## 🚀 Features
